@@ -42,8 +42,8 @@ def index():
 def avantajli_indirim_hesapla(df):
     try:
         if "TRENDYOL SATIŞ FİYATI" in df.columns and "MÜŞTERİNİN GÖRDÜĞÜ FİYAT" in df.columns:
-            tf = df["TRENDYOL SATIŞ FİYATI"]
-            gf = df["MÜŞTERİNİN GÖRDÜĞÜ FİYAT"]
+            tf = pd.to_numeric(df["TRENDYOL SATIŞ FİYATI"], errors="coerce")
+            gf = pd.to_numeric(df["MÜŞTERİNİN GÖRDÜĞÜ FİYAT"], errors="coerce")
             yeni_tsf = tf * 0.9
             indirim = (tf - yeni_tsf).round(2)
 
