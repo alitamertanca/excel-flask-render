@@ -42,50 +42,60 @@ def index():
 
 def avantajli_indirim_hesapla(df):
     try:
+        # Gerekli sütunları sayısal hale getir
         tf = pd.to_numeric(df["TRENDYOL SATIŞ FİYATI"], errors="coerce")
         gf = pd.to_numeric(df["MÜŞTERİNİN GÖRDÜĞÜ FİYAT"], errors="coerce")
         y1Ust = pd.to_numeric(df["1 YILDIZ ÜST FİYAT"], errors="coerce")
+        y1Alt = pd.to_numeric(df["1 YILDIZ ALT FİYAT"], errors="coerce")
         y2Ust = pd.to_numeric(df["2 YILDIZ ÜST FİYAT"], errors="coerce")
+        y2Alt = pd.to_numeric(df["2 YILDIZ ALT FİYAT"], errors="coerce")
         y3Ust = pd.to_numeric(df["3 YILDIZ ÜST FİYAT"], errors="coerce")
 
-        hedefGF = []
         kaynak_baslik = []
+        indirimTL = []
+        yeni_tsf = []
 
         for i in range(len(df)):
             try:
-                if pd.isna(gf[i]):
-                    hedefGF.append(np.nan)
+                if tf[i] == 0 or gf[i] == 0 or pd.isna(tf[i]) or pd.isna(gf[i]):
                     kaynak_baslik.append("")
-                elif gf[i] > y1Ust[i]:
-                    hedefGF.append(y1Ust[i])
-                    kaynak_baslik.append("1 YILDIZ ÜST FİYAT")
+                    indirimTL.append("")
+                    yeni_tsf.append("")
+                    continue
+
+                if gf[i] > y1Ust[i]:
+                    hedefGF = y1Ust[i]
+                    kaynak = "1 YILDIZ ÜST FİYAT"
                 elif gf[i] > y2Ust[i]:
-                    hedefGF.append(y2Ust[i])
-                    kaynak_baslik.append("2 YILDIZ ÜST FİYAT")
+                    hedefGF = y2Ust[i]
+                    kaynak = "2 YILDIZ ÜST FİYAT"
                 elif gf[i] > y3Ust[i]:
-                    hedefGF.append(y3Ust[i])
-                    kaynak_baslik.append("3 YILDIZ ÜST FİYAT")
+                    hedefGF = y3Ust[i]
+                    kaynak = "3 YILDIZ ÜST FİYAT"
                 else:
-                    hedefGF.append(np.nan)
-                    kaynak_baslik.append("En iyi fiyatta")
+                    kaynak_baslik.append("")
+                    indirimTL.append("En iyi fiyatta")
+                    yeni_tsf.append(tf[i])
+                    continue
+
+                hedefFiyat = tf[i] * (hedefGF / gf[i]) - 0.2
+
+                if hedefFiyat >= tf[i]:
+                    indirim = 0
+                else:
+                    indirim = round((tf[i] - hedefFiyat) / 100, 2)
+
+                kaynak_baslik.append(kaynak)
+                indirimTL.append(indirim)
+                yeni_tsf.append(round(tf[i] - indirim, 2))
             except:
-                hedefGF.append(np.nan)
-                kaynak_baslik.append("Hesaplama hatası")
+                kaynak_baslik.append("HATA")
+                indirimTL.append("HATA")
+                yeni_tsf.append("HATA")
 
         df["İNDİRİM KAYNAK FİYAT"] = kaynak_baslik
-
-        hedefGF_series = pd.Series(hedefGF)
-        hedefFiyat = tf * (hedefGF_series / gf) - 0.2
-        hedefFiyat = hedefFiyat.round(2)
-
-        indirimTL = np.where(
-            hedefGF_series.notna() & (hedefFiyat < tf),
-            ((tf - hedefFiyat) / 100).round(2),
-            0
-        )
-
         df["TRENDYOL İndirim Tutarı"] = indirimTL
-        df["YENİ TSF (FİYAT GÜNCELLE)"] = (tf - indirimTL).round(2)
+        df["YENİ TSF (FİYAT GÜNCELLE)"] = yeni_tsf
 
     except Exception as e:
         df["HATA"] = f"Avantajlı hesaplama hatası: {str(e)}"
