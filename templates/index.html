@@ -1,0 +1,20 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Excel İşlem Uygulaması</title>
+</head>
+<body>
+    <h1>Excel Dosyanızı Yükleyin</h1>
+    <form method="POST" enctype="multipart/form-data">
+        <label>İşlem Türü:</label><br>
+        <input type="radio" name="islem_turu" value="avantajli" required> Avantajlı Ürün İndirimi<br>
+        <input type="radio" name="islem_turu" value="komisyon"> Komisyon Hesaplama<br><br>
+
+        <label>Excel Dosyası:</label><br>
+        <input type="file" name="excel_file" required><br><br>
+
+        <button type="submit">İşlem Yap</button>
+    </form>
+</body>
+</html>
