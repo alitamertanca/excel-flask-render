@@ -27,11 +27,11 @@ def index():
 
             output = io.BytesIO()
             with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-                df.to_excel(writer, index=False)
+                 df.to_excel(writer, index=False, sheet_name="YıldızlıÜrünEtiketleri")
             output.seek(0)
 
             return send_file(output, as_attachment=True,
-                             download_name="sonuc.xlsx",
+                             download_name="avantajli_urun_sonuclar.xlsx",
                              mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
         except Exception as e:
