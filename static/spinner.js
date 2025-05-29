@@ -7,11 +7,11 @@ document.addEventListener("DOMContentLoaded", function () {
         spinner.style.display = "block";
         submitBtn.disabled = true;
 
-        // Spinner'ı 5 saniyede kapat + formu sıfırla
+        // Spinner'ı 3 saniyede kapat + formu sıfırla
         setTimeout(() => {
             spinner.style.display = "none";
             submitBtn.disabled = false;
             form.reset(); // ✅ form sıfırlanır
-        }, 5000);
+        }, 3000);
     });
 });
