@@ -1,20 +1,28 @@
-
 <!DOCTYPE html>
-<html>
+<html lang="tr">
 <head>
+    <meta charset="UTF-8">
     <title>Excel İşlem Uygulaması</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <h1>Excel Dosyanızı Yükleyin</h1>
-    <form method="POST" enctype="multipart/form-data">
-        <label>İşlem Türü:</label><br>
-        <input type="radio" name="islem_turu" value="avantajli" required> Avantajlı Ürün İndirimi<br>
-        <input type="radio" name="islem_turu" value="komisyon"> Komisyon Hesaplama<br><br>
+    <div class="container">
+        <h1>Excel İşlem Uygulaması</h1>
+        <form method="POST" enctype="multipart/form-data">
+            <input type="file" name="excel_file" required>
+            <select name="islem_turu" required>
+                <option value="">İşlem Türünü Seçin</option>
+                <option value="avantajli">✅ Avantajlı İndirim</option>
+                <option value="komisyon">📊 Komisyon Hesaplama</option>
+            </select>
+            <button type="submit" id="submitBtn">İşlem Yap</button>
+        </form>
+        <div id="spinner" class="spinner-container">
+            <div class="loader"></div>
+            <p>İşleniyor, lütfen bekleyin...</p>
+        </div>
+    </div>
 
-        <label>Excel Dosyası:</label><br>
-        <input type="file" name="excel_file" required><br><br>
-
-        <button type="submit">İşlem Yap</button>
-    </form>
+    <script src="{{ url_for('static', filename='spinner.js') }}"></script>
 </body>
 </html>
