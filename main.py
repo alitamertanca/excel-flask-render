@@ -1,4 +1,3 @@
-
 from flask import Flask, request, render_template, send_file
 import pandas as pd
 import numpy as np
@@ -100,14 +99,53 @@ def avantajli_indirim_hesapla(df):
 
 def komisyon_tsf_hesapla(df):
     try:
-        if "GÜNCEL TSF" in df.columns and "KOMİSYONA ESAS FİYAT" in df.columns:
-            indirim_yuzde = 1 - (df["KOMİSYONA ESAS FİYAT"] / df["GÜNCEL TSF"])
-            indirim_yuzde = indirim_yuzde.fillna(0).clip(lower=0)
-            df["İndirim (%)"] = (indirim_yuzde * 100).round(0)
+        # Gerekli sütunlar kontrolü
+        gerekli_sutunlar = [
+            "GÜNCEL TSF", "KOMİSYONA ESAS FİYAT", "GÜNCEL KOMİSYON",
+            "1.Fiyat Alt Limit", "2.Fiyat Üst Limiti", "3.Fiyat Üst Limiti", "4.Fiyat Üst Limiti",
+            "2.KOMİSYON", "3.KOMİSYON", "4.KOMİSYON"
+        ]
+        for s in gerekli_sutunlar:
+            if s not in df.columns:
+                raise Exception(f"Gerekli sütun eksik: {s}")
 
-            hedef_esas = df.get("1.Fiyat Alt Limit", pd.Series([0]*len(df))) + 1
-            yeni_tsf = hedef_esas / (1 - indirim_yuzde)
-            df["Yeni TSF (1. Komisyon)"] = yeni_tsf.round(2)
+        # Yeni sütunlar oluştur
+        df["İndirim (%)"] = ""
+        for i in range(1, 5):
+            df[f"YeniTSF ({i}. Komisyon)"] = ""
+            df[f"Fark({i}. Komisyon)"] = ""
+
+        # Hesaplamalar
+        for i, row in df.iterrows():
+            try:
+                tsf = float(row["GÜNCEL TSF"])
+                esas_fiyat = float(row["KOMİSYONA ESAS FİYAT"])
+                guncel_komisyon = float(row["GÜNCEL KOMİSYON"])
+
+                indirim_orani = 0 if tsf == 0 else 1 - (esas_fiyat / tsf)
+                df.at[i, "İndirim (%)"] = round(indirim_orani * 100)
+
+                for j in range(1, 5):
+                    if j == 1:
+                        hedef_fiyat = float(row["1.Fiyat Alt Limit"]) + 1
+                    else:
+                        hedef_fiyat = float(row[f"{j}.Fiyat Üst Limiti"]) - 1
+
+                    yeni_tsf = round(hedef_fiyat / (1 - indirim_orani), 2)
+                    fark = round(tsf - yeni_tsf, 2) * -1
+
+                    if j == 1 or guncel_komisyon != float(row.get(f"{j}.KOMİSYON", 0)):
+                        df.at[i, f"YeniTSF ({j}. Komisyon)"] = yeni_tsf
+                        df.at[i, f"Fark({j}. Komisyon)"] = fark
+                    else:
+                        df.at[i, f"YeniTSF ({j}. Komisyon)"] = tsf
+                        df.at[i, f"Fark({j}. Komisyon)"] = f"Güncel Komisyon: {guncel_komisyon}"
+
+            except Exception:
+                continue
+
     except Exception as e:
         df["HATA"] = f"Komisyon hesaplama hatası: {str(e)}"
+
     return df
+
