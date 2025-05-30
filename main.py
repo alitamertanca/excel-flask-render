@@ -99,7 +99,6 @@ def avantajli_indirim_hesapla(df):
 
 def komisyon_tsf_hesapla(df):
     try:
-        # Gerekli sütunlar kontrolü
         gerekli_sutunlar = [
             "GÜNCEL TSF", "KOMİSYONA ESAS FİYAT", "GÜNCEL KOMİSYON",
             "1.Fiyat Alt Limit", "2.Fiyat Üst Limiti", "3.Fiyat Üst Limiti", "4.Fiyat Üst Limiti",
@@ -109,43 +108,50 @@ def komisyon_tsf_hesapla(df):
             if s not in df.columns:
                 raise Exception(f"Gerekli sütun eksik: {s}")
 
-        # Yeni sütunlar oluştur
-        df["İndirim (%)"] = ""
-        for i in range(1, 5):
-            df[f"YeniTSF ({i}. Komisyon)"] = ""
-            df[f"Fark({i}. Komisyon)"] = ""
+        # Yeni sütunlar
+        df["İndirim (%)"] = np.nan
+        for j in range(1, 5):
+            df[f"YeniTSF ({j}. Komisyon)"] = np.nan
+            df[f"Fark({j}. Komisyon)"] = ""
 
-        # Hesaplamalar
-        for i, row in df.iterrows():
+        # Satır bazlı hızlı ve adlarla işlem
+        for idx, (
+            tsf, esas_fiyat, guncel_komisyon,
+            alt_limit, ust2, ust3, ust4,
+            kom2, kom3, kom4
+        ) in df[[
+            "GÜNCEL TSF", "KOMİSYONA ESAS FİYAT", "GÜNCEL KOMİSYON",
+            "1.Fiyat Alt Limit", "2.Fiyat Üst Limiti", "3.Fiyat Üst Limiti", "4.Fiyat Üst Limiti",
+            "2.KOMİSYON", "3.KOMİSYON", "4.KOMİSYON"
+        ]].itertuples(index=True, name=None):
+
             try:
-                tsf = float(row["GÜNCEL TSF"])
-                esas_fiyat = float(row["KOMİSYONA ESAS FİYAT"])
-                guncel_komisyon = float(row["GÜNCEL KOMİSYON"])
+                tsf = float(tsf)
+                esas_fiyat = float(esas_fiyat)
+                guncel_komisyon = float(guncel_komisyon)
+
+                fiyat_limitleri = [float(alt_limit), float(ust2), float(ust3), float(ust4)]
+                komisyonlar = [guncel_komisyon, float(kom2), float(kom3), float(kom4)]
 
                 indirim_orani = 0 if tsf == 0 else 1 - (esas_fiyat / tsf)
-                df.at[i, "İndirim (%)"] = round(indirim_orani * 100)
+                df.at[idx, "İndirim (%)"] = round(indirim_orani * 100, 2)
 
                 for j in range(1, 5):
-                    if j == 1:
-                        hedef_fiyat = float(row["1.Fiyat Alt Limit"]) + 1
-                    else:
-                        hedef_fiyat = float(row[f"{j}.Fiyat Üst Limiti"]) - 1
-
+                    hedef_fiyat = (fiyat_limitleri[j - 1] + 1) if j == 1 else (fiyat_limitleri[j - 1] - 1)
                     yeni_tsf = round(hedef_fiyat / (1 - indirim_orani), 2)
-                    fark = round(tsf - yeni_tsf, 2) * -1
+                    fark = round(yeni_tsf - tsf, 2)
 
-                    if j == 1 or guncel_komisyon != float(row.get(f"{j}.KOMİSYON", 0)):
-                        df.at[i, f"YeniTSF ({j}. Komisyon)"] = yeni_tsf
-                        df.at[i, f"Fark({j}. Komisyon)"] = fark
+                    if j == 1 or guncel_komisyon != komisyonlar[j - 1]:
+                        df.at[idx, f"YeniTSF ({j}. Komisyon)"] = yeni_tsf
+                        df.at[idx, f"Fark({j}. Komisyon)"] = fark
                     else:
-                        df.at[i, f"YeniTSF ({j}. Komisyon)"] = tsf
-                        df.at[i, f"Fark({j}. Komisyon)"] = f"Güncel Komisyon: {guncel_komisyon}"
+                        df.at[idx, f"YeniTSF ({j}. Komisyon)"] = tsf
+                        df.at[idx, f"Fark({j}. Komisyon)"] = f"Güncel Komisyon: {guncel_komisyon}"
 
-            except Exception:
-                continue
+            except Exception as satir_hatasi:
+                df.at[idx, "HATA"] = f"Satır hatası: {satir_hatasi}"
 
     except Exception as e:
-        df["HATA"] = f"Komisyon hesaplama hatası: {str(e)}"
+        df["HATA"] = f"Genel komisyon hesaplama hatası: {str(e)}"
 
     return df
-
